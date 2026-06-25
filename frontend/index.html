@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoliPlay</title>
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/views.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/toast.css">
+    <link rel="stylesheet" href="/css/avatar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+</head>
+
+<body>
+    <div id="toast-container"></div>
+
+    <button id="sidebar-toggle-btn">☰</button>
+    <button id="avatar-library-btn" title="头像库">🖼️</button>
+    <button id="global-settings-btn" title="设置">⚙️</button>
+    <!-- 帮助文档按钮，固定右下角，位于头像库和设置按钮上方 -->
+    <button id="help-btn" title="帮助文档" style="position: fixed; bottom: 124px; right: 16px; width: 40px; height: 40px; border-radius: 12px; background: white; border: 1px solid var(--border); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); z-index: 1500; transition: background var(--transition);">📖</button>
+
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <span>故事列表</span>
+            <button id="sidebar-close">✕</button>
+        </div>
+        <div class="sidebar-content">
+            <button id="new-story-btn">＋ 新故事</button>
+            <div id="story-list"></div>
+        </div>
+    </div>
+
+    <div id="app">
+        <div id="start-view" class="view active">
+            <div class="start-content">
+                <h1>🎲 SoliPlay</h1>
+                <p class="start-subtitle">AI 导演驱动的互动叙事引擎</p>
+                <p class="start-desc">支持跑团与小说模式，从零构建你的独特故事。</p>
+                <button id="start-create-btn" class="btn-primary">开始新故事</button>
+            </div>
+        </div>
+
+        <div id="chat-view" class="view">
+            <header id="top-bar">
+                <span class="logo">🎲 SoliPlay</span>
+                <div>
+                    <button id="status-btn" title="主角状态">📋</button>
+                </div>
+            </header>
+            <div id="chat-messages"></div>
+            <div id="chat-input-area">
+                <div id="input-prompt"></div>
+                <div class="input-row">
+                    <input type="text" id="user-input" placeholder="输入行动或对话..." disabled>
+                    <button id="send-btn" title="发送">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="create-view" class="view">
+            <header id="create-top-bar">
+                <button id="back-btn">← 返回</button>
+                <span>设计新故事</span>
+                <div></div>
+            </header>
+            <div class="create-content">
+                <div class="mode-selector">
+                    <div class="mode-card" data-mode="trpg">
+                        <span class="mode-icon">🎲</span>
+                        <span class="mode-name">跑团模式</span>
+                        <span class="mode-desc">公正严苛，命运由骰子决定</span>
+                    </div>
+                    <div class="mode-card selected" data-mode="lightnovel">
+                        <span class="mode-icon">✨</span>
+                        <span class="mode-name">小说模式</span>
+                        <span class="mode-desc">戏剧性奇遇，主角光环闪耀</span>
+                    </div>
+                </div>
+                <textarea id="story-requirements" placeholder="描述你想要的世界、角色或故事风格……" rows="3"></textarea>
+                <button id="advanced-toggle" class="advanced-toggle">⚙️ 高级选项 ▾</button>
+                <div id="advanced-options" style="display: none;">
+                    <!-- 复活故事 -->
+                    <div class="resurrect-section">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="enable-resurrect">
+                            <span>复活故事（从已有剧情断点继续）</span>
+                        </label>
+                        <div id="resurrect-options" style="display: none;">
+                            <label class="input-label">世界观</label>
+                            <textarea id="story-worldview" placeholder="描述这个世界的背景、规则、势力分布等..." rows="4"></textarea>
+                            <label class="input-label">故事链</label>
+                            <textarea id="story-chain" placeholder="描述故事到目前为止的关键事件、角色位置、未完成的任务等..." rows="5"></textarea>
+                            <label class="input-label">故事情节安排特点</label>
+                            <textarea id="plot-style" placeholder="描述叙事风格、节奏偏好、角色互动偏好等..." rows="3"></textarea>
+                            <div class="resurrect-char-controls">
+                                <button id="add-resurrect-char-btn" class="btn-text">＋ 新建复活角色</button>
+                                <input type="file" id="import-char-file" accept=".char,.txt,.*" multiple style="display: none;">
+                                <button id="import-char-btn" class="btn-text">📥 批量导入角色</button>
+                                <span>已添加 <span id="resurrect-char-count">0</span> 个角色</span>
+                            </div>
+                            <div id="resurrect-char-list"></div>
+                        </div>
+                    </div>
+
+                    <div id="novel-sub-options">
+                        <label class="input-label">小说风格 <span class="label-hint">— 决定叙事风格与节奏</span></label>
+                        <div class="sub-selector">
+                            <button class="sub-btn selected" data-sub="none">无</button>
+                            <button class="sub-btn" data-sub="chinese">中式网文</button>
+                            <button class="sub-btn" data-sub="japanese">日式轻小说</button>
+                        </div>
+                        <label class="input-label">受众取向 <span class="label-hint">— 影响情节侧重与角色塑造</span></label>
+                        <div class="sub-selector">
+                            <button class="sub-btn selected" data-aud="none">无</button>
+                            <button class="sub-btn" data-aud="general">一般向</button>
+                            <button class="sub-btn" data-aud="male">男性向</button>
+                            <button class="sub-btn" data-aud="female">女性向</button>
+                            <button class="sub-btn" data-aud="kids">子供向</button>
+                        </div>
+                        <label class="input-label">叙事重心 <span class="label-hint">— 日常与战斗的侧重</span></label>
+                        <div class="sub-selector">
+                            <button class="sub-btn selected" data-focus="none">无</button>
+                            <button class="sub-btn" data-focus="daily">日常</button>
+                            <button class="sub-btn" data-focus="combat">战斗</button>
+                        </div>
+                    </div>
+                    <div class="randomness-group">
+                        <label class="input-label">故事随机性</label>
+                        <div class="slider-container">
+                            <input type="range" id="story-randomness" min="0" max="100" value="50">
+                            <span class="slider-value" id="story-randomness-value">50%</span>
+                        </div>
+                        <div class="slider-hint">低：经典老套 / 高：新颖随机</div>
+                    </div>
+                    <div class="randomness-group">
+                        <label class="input-label">人物随机性</label>
+                        <div class="slider-container">
+                            <input type="range" id="character-randomness" min="0" max="100" value="50">
+                            <span class="slider-value" id="character-randomness-value">50%</span>
+                        </div>
+                        <div class="slider-hint">低：经典人设 / 高：奇特个性</div>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="use-pro-actors">
+                        <span>演员使用 Pro 模型（更沉浸，消耗更多时间与token，建议开启）</span>
+                    </label>
+                    <!-- 新增：转述者开关 -->
+                    <label class="toggle-label">
+                        <input type="checkbox" id="enable-narrator">
+                        <span>启用转述者（增强角色沉浸感，消耗更多时间与token）</span>
+                    </label>
+                    <label class="input-label">雷点设置（用逗号分隔）</label>
+                    <input type="text" id="taboos-input" placeholder="例如：禁止NTR, 女主角必须纯洁, 不允许背叛">
+
+                    <div id="protagonist-card">
+                        <h4>🎮 主角设定</h4>
+                        <div class="protagonist-name-row">
+                            <div class="input-group">
+                                <label class="input-label">姓名</label>
+                                <input type="text" id="protagonist-name" placeholder="输入你的角色名（可选）">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">背景简述</label>
+                                <input type="text" id="protagonist-background" placeholder="例如：流浪剑客、魔法学院学生">
+                            </div>
+                        </div>
+                        <p id="protagonist-card-hint">（仅作背景参考，无上限，数值体现角色特点）</p>
+                        <div class="attr-row">
+                            <div class="attr-item">
+                                <label class="input-label">力量</label>
+                                <input type="number" id="attr-str" value="50" min="1" max="200">
+                            </div>
+                            <div class="attr-item">
+                                <label class="input-label">敏捷</label>
+                                <input type="number" id="attr-dex" value="50" min="1" max="200">
+                            </div>
+                            <div class="attr-item">
+                                <label class="input-label">智力</label>
+                                <input type="number" id="attr-int" value="50" min="1" max="200">
+                            </div>
+                        </div>
+                        <div class="attr-row">
+                            <div class="attr-item">
+                                <label class="input-label">体力</label>
+                                <input type="number" id="attr-con" value="50" min="1" max="200">
+                            </div>
+                            <div class="attr-item">
+                                <label class="input-label">魅力</label>
+                                <input type="number" id="attr-cha" value="50" min="1" max="200">
+                            </div>
+                            <div class="attr-item" style="visibility:hidden;"></div>
+                        </div>
+                        <label class="input-label">技能（用逗号分隔，如 潜行60, 说服40）</label>
+                        <input type="text" id="skills-input" placeholder="例如：潜行60, 说服40, 剑术70">
+                        <label class="input-label">特殊能力/金手指</label>
+                        <input type="text" id="special-ability-input" placeholder="例如：时间回溯, 读心, 超级幸运">
+                        <label class="input-label">初始物品（用逗号分隔）</label>
+                        <input type="text" id="inventory-input" placeholder="例如：长剑, 皮甲, 治疗药水x3">
+                    </div>
+                </div>
+                <div class="create-actions">
+                    <button id="create-cancel" class="btn-text">取消</button>
+                    <button id="create-confirm" class="btn-primary">开始冒险</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings-view" class="view">
+            <header id="settings-top-bar">
+                <button id="settings-back-btn">← 返回</button>
+                <span>设置</span>
+                <div></div>
+            </header>
+            <div class="settings-content">
+                <label class="input-label">API Key</label>
+                <p class="api-key-hint">Key 将被安全存储在您的系统中，不会随程序目录泄露。</p>
+                <input type="password" id="api-key-input" placeholder="输入你的 DeepSeek API Key">
+                <label class="input-label">导演重试次数</label>
+                <input type="number" id="retry-count" min="1" max="5" value="3">
+                <label class="toggle-label">
+                    <input type="checkbox" id="auto-save">
+                    <span>自动保存故事进度</span>
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="debug-mode">
+                    <span>大模型调试模式（输出详细日志）</span>
+                </label>
+                <div id="llm-log-story-option" style="display: none;">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="llm-log-to-story">
+                        <span>输出大模型日志到对应故事目录</span>
+                    </label>
+                </div>
+                <button id="save-settings-btn" class="btn-primary">保存设置</button>
+                <button id="check-update-btn" class="btn-text">🔄 检查更新</button>
+                <button id="contact-author-btn" class="btn-text">📧 联系作者</button>
+            </div>
+        </div>
+
+        <div id="avatar-view" class="view">
+            <header id="avatar-top-bar">
+                <button id="avatar-back-btn">← 返回</button>
+                <span>🖼️ 头像库</span>
+                <div></div>
+            </header>
+            <div class="avatar-content">
+                <div class="folder-bar">
+                    <select id="folder-select">
+                        <option value="">全部头像</option>
+                    </select>
+                    <button id="create-folder-btn" class="btn-text">＋ 新建</button>
+                    <button id="delete-folder-btn" class="btn-text btn-danger">🗑️ 删除</button>
+                </div>
+                <div id="crop-container" class="crop-area">
+                    <img id="crop-image">
+                    <div class="crop-actions">
+                        <button id="crop-cancel-btn" class="btn-text">取消</button>
+                        <button id="crop-confirm-btn" class="btn-primary">确认裁剪</button>
+                    </div>
+                </div>
+                <div class="upload-row">
+                    <input type="file" id="avatar-upload-input" accept="image/*" class="hidden-input">
+                    <button id="avatar-upload-btn" class="btn-primary">上传头像</button>
+                </div>
+                <div id="avatar-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-modal" class="modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🧑 主角状态</h3>
+                <button id="status-close" class="btn-text">✕</button>
+            </div>
+            <div id="status-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/view.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script src="/js/create.js"></script>
+    <script src="/js/chat.js"></script>
+    <script src="/js/status.js"></script>
+    <script src="/js/settings.js"></script>
+    <script src="/js/avatar.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+
+</html>
